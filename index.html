@@ -1608,10 +1608,8 @@ function doLogin() {
   const today = todayStr();
   let session = S.sessions.find(s => s.date===today && s.turno==turno && s.svId===sv.id);
 
-  if (!session) {
-    // También buscar por turno (compatibilidad con sesiones sin svId)
-    session = S.sessions.find(s => s.date===today && s.turno==turno && !s.svId);
-  }
+  // Nota: Se eliminó la búsqueda por compatibilidad sin svId
+  // para evitar que sesiones de distintos supervisores del mismo turno se sobreescriban
 
   if (!session) {
     session = {
@@ -1849,11 +1847,17 @@ function renderPicklistSessionInfo() {
     </div>
     <div style="margin-left:auto;display:flex;align-items:center;gap:8px;padding:0 8px">
       <label style="font-size:10px;font-weight:600;color:var(--tx3);letter-spacing:.4px;text-transform:uppercase">Fecha de captura</label>
-      <input type="date" id="session-date-picker" value="${sessDate}" onchange="changeSessionDate(this.value)"
-        style="padding:6px 10px;border:1px solid var(--brd);border-radius:7px;font-size:12px;font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--tx);cursor:pointer">
-      <button class="btn btn-ghost btn-sm" onclick="changeSessionDate(todayStr())" title="Volver a hoy" style="padding:5px 9px">
-        Hoy
-      </button>
+      ${(function(){
+        var _auth = S.auth;
+        var _autorizados = ['sv0','sv2','sv3'];
+        var _canBack = _autorizados.indexOf(_auth && _auth.svId) >= 0;
+        if (_canBack) {
+          return '<input type="date" id="session-date-picker" value="'+sessDate+'" onchange="changeSessionDate(this.value)" style="padding:6px 10px;border:1px solid var(--brd);border-radius:7px;font-size:12px;font-family:DM Sans,sans-serif;background:var(--bg);color:var(--tx);cursor:pointer">'
+            + '<button class="btn btn-ghost btn-sm" onclick="changeSessionDate(todayStr())" title="Volver a hoy" style="padding:5px 9px">Hoy</button>';
+        } else {
+          return '<span style="font-size:12px;font-weight:600;color:var(--tx2);padding:6px 10px;background:var(--bg2);border-radius:7px;border:1px solid var(--brd)">' + sessDate + '</span>';
+        }
+      })()}
     </div>
   </div>`;
 }
@@ -1872,7 +1876,15 @@ function changeSessionDate(newDate) {
   // Verificar que la fecha no sea futura
   if (newDate > todayStr()) {
     alert('No puedes capturar asistencia de una fecha futura.');
-    // Restaurar el valor
+    const dp = document.getElementById('session-date-picker');
+    const cur = S.sessions.find(s=>s.id===S.currentSession);
+    if (dp && cur) dp.value = cur.date;
+    return;
+  }
+  // Verificar autorización para fechas anteriores
+  var _autorizados = ['sv0','sv2','sv3'];
+  if (newDate < todayStr() && _autorizados.indexOf(S.auth && S.auth.svId) < 0) {
+    alert('No tienes permiso para registrar asistencia de días anteriores.');
     const dp = document.getElementById('session-date-picker');
     const cur = S.sessions.find(s=>s.id===S.currentSession);
     if (dp && cur) dp.value = cur.date;
@@ -1882,8 +1894,8 @@ function changeSessionDate(newDate) {
   // Buscar sesión existente para el mismo supervisor/turno/fecha
   let session = S.sessions.find(s => s.date===newDate && s.turno==turno && s.svId===svId);
   if (!session) {
-    // Compatibilidad con sesiones sin svId
-    session = S.sessions.find(s => s.date===newDate && s.turno==turno && !s.svId && s.supervisor===auth.supervisor);
+    // Compatibilidad: buscar por supervisor y turno (solo si el supervisor coincide exactamente)
+    session = S.sessions.find(s => s.date===newDate && s.turno==turno && s.supervisor===auth.supervisor && !s.svId);
   }
 
   if (!session) {
