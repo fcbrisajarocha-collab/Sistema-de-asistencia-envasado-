@@ -1167,7 +1167,7 @@ const SUPERVISORS = [
   {id:'sv0', user:'Nestor Dali Santiago Altamirano', pass:'50001', name:'Nestor Dali Santiago Altamirano', turno:1, area:'ADMINISTRADOR'},
   // Supervisores Envasado
   {id:'sv1', user:'Aaron Huerta Cruz',               pass:'50864', name:'Aaron Huerta Cruz',               turno:1, area:'Supervisor de Envasado'},
-  {id:'sv2', user:'Jose Luis Hernandez Ramirez',     pass:'50280', name:'Jose Luis Hernandez Ramirez',     turno:2, area:'Supervisor de Envasado'},
+  {id:'sv2', user:'Jose Luis Hernandez Ramirez',     pass:'50280', name:'Jose Luis Hernandez Ramirez',     turno:'mix', area:'Supervisor de Envasado'},
   {id:'sv3', user:'Germain Apale Jorge',             pass:'50902', name:'Germain Apale Jorge',             turno:2, area:'Supervisor de Envasado'},
   {id:'sv4', user:'Samuel Cortes Beltran',           pass:'SamCor2026', name:'Samuel Cortes Beltran',           turno:3, area:'Supervisor de Envasado'},
 ];
@@ -1901,7 +1901,7 @@ function changeSessionDate(newDate) {
   if (!session) {
     // Crear nueva sesión para esa fecha
     session = {
-      id: `${newDate}_T${turno}_${uid()}`,
+      id: `${newDate}_T${turno}_${svId}_${uid()}`,
       supervisor: auth.supervisor,
       area: auth.area,
       turno: turno,
