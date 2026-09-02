@@ -1304,8 +1304,33 @@ function fbSet(data) {
 }
 
 function aplicarDatos(d) {
-  if (Array.isArray(d.catalog))  S.catalog  = d.catalog;
-  if (Array.isArray(d.sessions)) S.sessions = d.sessions;
+  if (Array.isArray(d.catalog)) S.catalog = d.catalog;
+  if (Array.isArray(d.sessions)) {
+    // Merge inteligente: no sobreescribir sesiones locales activas
+    // Para cada sesión remota, solo aplicar si:
+    // 1) No existe localmente, O
+    // 2) La sesión remota es más reciente que la local Y no es la sesión activa actual
+    var remoteSessions = d.sessions;
+    var localSessions  = S.sessions;
+    var merged = {};
+
+    // Primero indexar todas las sesiones remotas
+    remoteSessions.forEach(function(s) { merged[s.id] = s; });
+
+    // Luego aplicar sesiones locales — la local gana si es la sesión activa
+    localSessions.forEach(function(s) {
+      if (!merged[s.id]) {
+        // Sesión local que no existe en remoto — es nueva, conservar
+        merged[s.id] = s;
+      } else if (s.id === S.currentSession) {
+        // Es la sesión activa del usuario actual — la local siempre gana
+        merged[s.id] = s;
+      }
+      // Si existe en remoto y no es la activa, la remota gana (ya está en merged)
+    });
+
+    S.sessions = Object.values(merged);
+  }
 }
 
 var _pendingSave = false;
